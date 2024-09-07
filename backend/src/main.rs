@@ -1,35 +1,49 @@
-use self::models::{ExpenseList, NewExpenseList};
-use self::schema::*;
-use diesel::prelude::*;
+pub mod db;
+pub mod http_errors;
+pub mod routes;
+
+use std::net::SocketAddr;
+
+use axum::{routing::get, Router};
 use dotenvy::dotenv;
-use expenses_sharing_backend::*;
-use uuid::Uuid;
+use routes::expense_list::get_expense_lists;
+use tower_http::trace::TraceLayer;
+use tracing_subscriber::{
+    filter::{EnvFilter, LevelFilter},
+    layer::SubscriberExt,
+    util::SubscriberInitExt,
+};
 
-fn main() {
-    // load environment variables from .env file
-    dotenv().expect(".env file not found");
+#[tokio::main]
+async fn main() {
+    // Add tracing_subscriber to enable logging to stdout. Default log level
+    // is DEBUG, and it can be changed with RUST_LOG env variable. Tracing can
+    // be enabled on source-level too, for example:
+    // RUST_LOG=info,tower_http=debug
+    tracing_subscriber::registry()
+        .with(
+            EnvFilter::builder()
+                .with_default_directive(LevelFilter::DEBUG.into())
+                .from_env_lossy(),
+        )
+        .with(tracing_subscriber::fmt::layer())
+        .init();
 
-    let connection = &mut establish_connection();
-
-    let new_expense_list = NewExpenseList {
-        title: "Asd".to_string(),
-        id: Uuid::new_v4(),
-    };
-
-    diesel::insert_into(expense_list::table)
-        .values(&new_expense_list)
-        .returning(ExpenseList::as_returning())
-        .get_result(connection)
-        .expect("Error saving new expense list");
-
-    let results = expense_list::table
-        .limit(5)
-        .select(ExpenseList::as_select())
-        .load(connection)
-        .expect("Error loading expense lists");
-
-    println!("Displaying {} expense lists", results.len());
-    for expense_list in results {
-        println!("{}", expense_list.title);
+    // Read environment variables from .env file
+    if let Err(error) = dotenv() {
+        tracing::warn!("Failed to load variables from .env file: \"{}\". Make sure that environment variables are set some other way.", error)
     }
+
+    let db_connection_pool = db::client::establish_connection_pool();
+
+    // build our application with a single route
+    let app = Router::new()
+        .route("/expense-lists", get(get_expense_lists))
+        .with_state(db_connection_pool)
+        .layer(TraceLayer::new_for_http());
+
+    let address = SocketAddr::from(([0, 0, 0, 0], 3000));
+    tracing::debug!("Starting server on {address}");
+    let listener = tokio::net::TcpListener::bind(&address).await.unwrap();
+    axum::serve(listener, app).await.unwrap();
 }

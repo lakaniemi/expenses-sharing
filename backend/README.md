@@ -15,6 +15,14 @@ Set up `.env` file:
 DATABASE_URL=postgres://postgres:postgres@localhost/expense_sharing
 ```
 
+```bash
+# Install cargo-watch if not already installed
+cargo install cargo-watch
+
+# Run server in watch mode
+cargo watch -x run
+```
+
 ## Migrations
 
 ```bash

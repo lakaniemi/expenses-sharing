@@ -8,5 +8,12 @@ diesel = { version = "2.2.4", features = ["postgres", "uuid"] }
 pq-sys = { version = "0.6", features = ["bundled"] }
 openssl-sys = { version = "0.9.100", features = ["vendored"] } 
 dotenvy = "0.15.7"
-serde = "1.0.210"
-uuid = { version = "1.10.0", features = ["v4"] }
+serde = { version = "1.0.210", features = ["derive"] }
+uuid = { version = "1.10.0", features = ["serde", "v4"] }
+axum = { version = "0.7.5", features = ["macros"] }
+tokio = { version = "1.40.0", features = ["full"] }
+tower = "0.5.0"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+deadpool-diesel = { version = "0.6.1", features = ["postgres"] }
+tracing = "0.1.40"
+tower-http = { version = "0.5.2", features = ["trace"] }
