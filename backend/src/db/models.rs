@@ -1,6 +1,6 @@
 use crate::db::schema;
 use diesel::prelude::*;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 #[derive(Queryable, Selectable, Serialize)]
@@ -9,6 +9,22 @@ use uuid::Uuid;
 pub struct ExpenseList {
     pub id: Uuid,
     pub title: String,
+}
+
+#[derive(Queryable, Selectable, Serialize)]
+#[diesel(table_name = schema::user_account)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct User {
+    pub id: Uuid,
+    pub name: String,
+}
+
+#[derive(Insertable, Deserialize)]
+#[diesel(table_name = schema::user_account)]
+pub struct NewUser {
+    #[serde(skip_deserializing)]
+    pub id: Uuid,
+    pub name: String,
 }
 
 #[derive(Insertable)]

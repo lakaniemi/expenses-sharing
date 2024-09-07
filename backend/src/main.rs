@@ -1,12 +1,15 @@
 pub mod db;
-pub mod http_errors;
+pub mod http_utils;
 pub mod routes;
 
 use std::net::SocketAddr;
 
 use axum::{routing::get, Router};
 use dotenvy::dotenv;
-use routes::expense_list::get_expense_lists;
+use routes::{
+    expense_list::get_expense_lists,
+    user::{create_user, get_users},
+};
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{
     filter::{EnvFilter, LevelFilter},
@@ -39,6 +42,7 @@ async fn main() {
     // build our application with a single route
     let app = Router::new()
         .route("/expense-lists", get(get_expense_lists))
+        .route("/users", get(get_users).post(create_user))
         .with_state(db_connection_pool)
         .layer(TraceLayer::new_for_http());
 
